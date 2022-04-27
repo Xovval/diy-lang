@@ -15,7 +15,30 @@ def parse(source):
     """Parse string representation of one *single* expression
     into the corresponding Abstract Syntax Tree."""
 
-    raise NotImplementedError("DIY")
+    source = remove_comments(source).strip()
+
+    if source == '#t': return True
+    if source == '#f': return False
+    if source.isdigit(): return int(source)
+
+    ch = source[0]
+    if ch == "'":
+        return ['quote', parse(source[1:])]
+    if ch == '(':
+        close_paren = find_matching_paren(source)
+        if close_paren < len(source) - 1:
+            raise DiyLangError('Expected EOF')
+        return [parse(exp) for exp in split_exps(source[1:close_paren])]
+    if ch == '"':
+        if source[-1] != '"':
+            raise DiyLangError('Unclosed string')
+        end = find_string_end(source)
+        if end != len(source) - 1:
+            raise DiyLangError('Expected EOF')
+        s = source[1:end]
+        return String(s)
+
+    return source
 
 #
 # Below are a few useful utility functions. These should come in handy when
@@ -40,11 +63,22 @@ def find_matching_paren(source, start=0):
         pos += 1
         if len(source) == pos:
             raise DiyLangError("Incomplete expression: %s" % source[start:])
+        if source[pos] == '"':
+            pos = find_string_end(source, pos)
         if source[pos] == '(':
             open_brackets += 1
         if source[pos] == ')':
             open_brackets -= 1
     return pos
+
+def find_string_end(source, start=0):
+    pos = start+1
+    while pos < len(source):
+        if source[pos] == '"' and source[pos - 1] != '\\':
+            return pos
+        pos += 1
+    raise DiyLangError('Expected EOF')
+
 
 
 def split_exps(source):
@@ -78,6 +112,9 @@ def first_expression(source):
     elif source[0] == "(":
         last = find_matching_paren(source)
         return source[:last + 1], source[last + 1:]
+    elif source[0] == '"':
+        last = find_string_end(source)
+        return source[:last+1], source[last+1:]
     else:
         match = re.match(r"^[^\s)(']+", source)
         end = match.end()

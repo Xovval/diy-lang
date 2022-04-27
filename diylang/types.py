@@ -16,7 +16,9 @@ class DiyLangError(Exception):
 class Closure(object):
 
     def __init__(self, env, params, body):
-        raise NotImplementedError("DIY")
+        self.env = env
+        self.params = params
+        self.body = body
 
     def __repr__(self):
         return "<closure/%d>" % len(self.params)
@@ -28,13 +30,19 @@ class Environment(object):
         self.bindings = variables if variables else {}
 
     def lookup(self, symbol):
-        raise NotImplementedError("DIY")
+        if not symbol in self.bindings:
+            raise DiyLangError(str(symbol) + ' not found')
+        return self.bindings[symbol]
 
     def extend(self, variables):
-        raise NotImplementedError("DIY")
+        extended = dict(self.bindings)
+        extended.update(variables)
+        return Environment(extended)
 
     def set(self, symbol, value):
-        raise NotImplementedError("DIY")
+        if symbol in self.bindings:
+            raise DiyLangError(symbol + ' already defined')
+        self.bindings[symbol] = value
 
 
 class String(object):
