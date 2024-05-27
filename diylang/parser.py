@@ -15,7 +15,44 @@ def parse(source):
     """Parse string representation of one *single* expression
     into the corresponding Abstract Syntax Tree."""
 
-    raise NotImplementedError("DIY")
+    source = source.strip()
+
+    if (source == '#t'):
+        return True
+    elif (source == '#f'):
+        return False
+    
+    if (source.isdigit()):
+        return int(source)
+    
+    if (source[0] == '('):
+        return parse_list(source)
+    
+    if len(split_exps(source.strip())) > 1:
+        raise DiyLangError("Expected a single expression")
+
+       
+
+    return source;
+
+
+def parse_list(source):
+    closing_paren = find_matching_paren(source, 0)
+
+    # Extract the elements within the parentheses
+    elements = split_exps(source[1:closing_paren])
+
+    # Parse each element
+    parsed_elements = []
+    for element in elements:
+        if element[0] == '(':
+            # If the element is a list, parse it as a list
+            parsed_elements.append(parse_list(element))
+        else:
+            # Otherwise, parse it as a symbol
+            parsed_elements.append(parse(element))
+
+    return parsed_elements
 
 #
 # Below are a few useful utility functions. These should come in handy when
